@@ -1,0 +1,11 @@
+{
+  "compilerOptions": {
+    "target": "es6",                     /* Chỉ định phiên bản JavaScript mục tiêu. ES6 tương thích rộng rãi. */
+    "module": "commonjs",                /* Chỉ định hệ thống module. 'commonjs' là chuẩn cho Node.js. */
+    "rootDir": "./src",                  /* Thư mục gốc chứa các file TypeScript (.ts) của bạn. */
+    "outDir": "./dist",                  /* Thư mục sẽ chứa các file JavaScript (.js) sau khi biên dịch. */
+    "esModuleInterop": true,             /* Rất quan trọng! Cho phép import các module CommonJS (như Express) một cách mượt mà. */
+    "strict": true,                      /* Bật tất cả các tùy chọn kiểm tra kiểu nghiêm ngặt. */
+    "skipLibCheck": true                 /* Bỏ qua việc kiểm tra kiểu của các file thư viện (.d.ts). */
+  }
+}
