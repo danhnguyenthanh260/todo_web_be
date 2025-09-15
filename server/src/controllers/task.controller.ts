@@ -1,85 +1,138 @@
 ﻿import { Request, Response } from 'express';
-import Task from '../models/task.model'; 
+import Task from '../models/task.model';
+import { ITask } from '../models/task.model'; 
 
-// === HÃ€M Táº O Má»˜T CÃ”NG VIá»†C Má»šI (CREATE) ===
+// === HÀM TẠO MỘT CÔNG VIỆC MỚI (CREATE) ===
+/**
+ * @route POST /api/tasks
+ * @desc Tạo một công việc mới
+ * @access Public
+ */
 export const createTask = async (req: Request, res: Response) => {
   try {
-    const { title, description, deadline } = req.body;
+    const { title, description, content, deadline, isCompleted, reminder } = req.body as Partial<ITask>; 
 
-    // Kiá»ƒm tra dá»¯ liá»‡u Ä‘áº§u vÃ o cÆ¡ báº£n
     if (!title) {
-      return res.status(400).json({ message: 'Title is required' });
+      return res.status(400).json({ message: 'Tiêu đề công việc là bắt buộc.' });
     }
 
+    // Tạo một đối tượng Task mới
     const newTask = new Task({
       title,
       description,
-      deadline,
+      content, // Bao gồm content
+      deadline: deadline ? new Date(deadline) : undefined, // Chuyển đổi sang Date object nếu có
+      isCompleted: isCompleted ?? false, // Mặc định là false nếu không được cung cấp
+      reminder, // Bao gồm reminder
     });
 
+    // Lưu task mới vào cơ sở dữ liệu
     const savedTask = await newTask.save();
-    res.status(201).json(savedTask); // Tráº£ vá» 201 Created vÃ  dá»¯ liá»‡u cá»§a task má»›i
+    // Trả về 201 Created và dữ liệu của task mới
+    res.status(201).json(savedTask);
   } catch (error) {
-    res.status(500).json({ message: 'Server error while creating task', error });
+    console.error("Lỗi khi tạo công việc:", error);
+    res.status(500).json({ message: 'Lỗi server khi tạo công việc.', error });
   }
 };
 
-// === HÃ€M Láº¤Y Táº¤T Cáº¢ CÃ”NG VIá»†C (READ) ===
+// === HÀM LẤY TẤT CẢ CÔNG VIỆC (READ) ===
+/**
+ * @route GET /api/tasks
+ * @desc Lấy tất cả các công việc từ cơ sở dữ liệu
+ * @access Public
+ */
 export const getAllTasks = async (req: Request, res: Response) => {
   try {
-    const tasks = await Task.find(); // TÃ¬m táº¥t cáº£ cÃ¡c document trong collection 'tasks'
-    res.status(200).json(tasks); 
+    // Tìm tất cả các document trong collection 'tasks'
+    const tasks = await Task.find();
+    res.status(200).json(tasks);
   } catch (error) {
-    res.status(500).json({ message: 'Server error while fetching tasks', error });
+    console.error("Lỗi khi lấy danh sách công việc:", error);
+    res.status(500).json({ message: 'Lỗi server khi lấy danh sách công việc.', error });
   }
 };
 
-// === HÃ€M Cáº¬P NHáº¬T CÃ”NG VIá»†C (UPDATE) ===
+// === HÀM CẬP NHẬT CÔNG VIỆC (UPDATE) ===
+/**
+ * @route PUT /api/tasks/:id
+ * @desc Cập nhật một công việc bằng ID
+ * @access Public
+ */
 export const updateTask = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params; // Láº¥y id tá»« URL
-    
-    // TÃ¬m vÃ  cáº­p nháº­t task báº±ng id.
-    // req.body chá»©a cÃ¡c trÆ°á»ng cáº§n cáº­p nháº­t, vÃ­ dá»¥: { isCompleted: true }
-    // { new: true } Ä‘á»ƒ káº¿t quáº£ tráº£ vá» lÃ  task SAU KHI Ä‘Ã£ Ä‘Æ°á»£c cáº­p nháº­t
-    const updatedTask = await Task.findByIdAndUpdate(id, req.body, { new: true });
+    const { id } = req.params; // Lấy id từ URL params
+    const updateData = req.body as Partial<ITask>; // Dữ liệu cập nhật từ body
+
+    // Xử lý deadline nếu nó được gửi đến (chuyển đổi từ string ISO sang Date)
+    if (updateData.deadline && typeof updateData.deadline === 'string') {
+        updateData.deadline = new Date(updateData.deadline);
+    }
+    // Nếu deadline được gửi là null/undefined hoặc chuỗi rỗng, đặt nó là null để xóa deadline
+    if (updateData.deadline === null || (typeof updateData.deadline === 'string' && updateData.deadline === '')) {
+        updateData.deadline = undefined;
+    }
+
+    // Tìm và cập nhật task bằng id.
+    // { new: true } để kết quả trả về là task SAU KHI đã được cập nhật
+    const updatedTask = await Task.findByIdAndUpdate(id, updateData, { new: true });
 
     if (!updatedTask) {
-      return res.status(404).json({ message: 'Task not found' });
+      return res.status(404).json({ message: 'Không tìm thấy công việc.' });
     }
 
     res.status(200).json(updatedTask);
   } catch (error) {
-    res.status(500).json({ message: 'Server error while updating task', error });
+    console.error("Lỗi khi cập nhật công việc:", error);
+    res.status(500).json({ message: 'Lỗi server khi cập nhật công việc.', error });
   }
 };
 
-// === HÃ€M XÃ“A Má»˜T CÃ”NG VIá»†C (DELETE) ===
+// === HÀM XÓA MỘT CÔNG VIỆC (DELETE) ===
+/**
+ * @route DELETE /api/tasks/:id
+ * @desc Xóa một công việc bằng ID
+ * @access Public
+ */
 export const deleteTask = async (req: Request, res: Response) => {
   try {
-    const { id } = req.params; // Láº¥y id tá»« URL
+    const { id } = req.params; // Lấy id từ URL params
 
     const deletedTask = await Task.findByIdAndDelete(id);
 
     if (!deletedTask) {
-      return res.status(404).json({ message: 'Task not found' });
+      return res.status(404).json({ message: 'Không tìm thấy công việc.' });
     }
 
-    res.status(200).json({ message: 'Task deleted successfully' });
+    res.status(200).json({ message: 'Công việc đã được xóa thành công.' });
   } catch (error) {
-    res.status(500).json({ message: 'Server error while deleting task', error });
+    console.error("Lỗi khi xóa công việc:", error);
+    res.status(500).json({ message: 'Lỗi server khi xóa công việc.', error });
   }
 };
+
 // === BATCH DELETE TASKS ===
+/**
+ * @route DELETE /api/tasks/batch-delete
+ * @desc Xóa nhiều công việc cùng lúc bằng một mảng các ID
+ * @access Public
+ */
 export const batchDeleteTasks = async (req: Request, res: Response) => {
   try {
     const { ids } = req.body as { ids?: string[] };
+
+    // Kiểm tra dữ liệu đầu vào: ids phải là một mảng chuỗi không rỗng
     if (!Array.isArray(ids) || ids.length === 0) {
-      return res.status(400).json({ message: 'Body must include { ids: string[] }' });
+      return res.status(400).json({ message: 'Body phải chứa một mảng các ID công việc (ids: string[]).' });
     }
+
+    // Xóa nhiều document dựa trên mảng các ID
     const result = await Task.deleteMany({ _id: { $in: ids } });
+
+    // Trả về số lượng công việc đã xóa
     return res.status(200).json({ deletedCount: result.deletedCount ?? 0 });
   } catch (error) {
-    res.status(500).json({ message: 'Server error while batch deleting tasks', error });
+    console.error("Lỗi khi xóa hàng loạt công việc:", error);
+    res.status(500).json({ message: 'Lỗi server khi xóa hàng loạt công việc.', error });
   }
 };

@@ -1,13 +1,17 @@
 import mongoose, { Schema, Document } from 'mongoose';
 
+
 export interface ITask extends Document {
   title: string;          
   description?: string;   
+  content?: string;       
   isCompleted: boolean;   
-  deadline?: Date;        
+  deadline?: Date;        // Hạn chót của công việc (không bắt buộc, kiểu Date)
+  reminder?: 'none' | '30m' | '1h' | '1d'; 
+  createdAt: Date;        
+  updatedAt: Date;        
 }
 
-// Định nghĩa cấu trúc (Schema) cho Task trong MongoDB
 const TaskSchema: Schema = new Schema(
   {
     title: {
@@ -18,20 +22,28 @@ const TaskSchema: Schema = new Schema(
       type: String,
       required: false,
     },
+    content: { 
+      type: String,
+      required: false, 
+    },
     isCompleted: {
       type: Boolean,
-      default: false, // Mặc định khi tạo mới là chưa hoàn thành
+      default: false, 
     },
     deadline: {
       type: Date,
-      required: false, // Hạn chót là không bắt buộc
+      required: false, 
+    },
+    reminder: { 
+      type: String,
+      enum: ['none', '30m', '1h', '1d'], 
+      default: 'none', 
+      required: false,
     },
   },
   {
-    timestamps: true, // Tự động thêm hai trường: createdAt và updatedAt
+    timestamps: true, 
   }
 );
 
-// Xuất ra Model để có thể sử dụng ở các file khác
-// Mongoose sẽ tự động tạo một collection tên là 'tasks' (số nhiều) trong DB
 export default mongoose.model<ITask>('Task', TaskSchema);
